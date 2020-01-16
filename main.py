@@ -2,7 +2,8 @@ from argparse import ArgumentParser
 from os.path import getsize, exists, isfile, abspath
 from typing import Union, Iterable, Optional, List
 
-__version__ = "0.5.1"
+__version__ = "0.6.0"
+
 
 def split_files(filename: str, byte_len: Union[int, Iterable[int]], filename_out: Optional[str] = None) -> List[str]:
     if not hasattr(byte_len, "__iter__"):
@@ -11,11 +12,11 @@ def split_files(filename: str, byte_len: Union[int, Iterable[int]], filename_out
                 yield tmp_x
 
         byte_len = tmp(byte_len)
-    filename_out = filename_out or "{fn}.fsp.{index}"
+    filename_out = filename_out or "{filename}.fsp.{index}"
     size = getsize(filename)
     index_counter = 1
     wrote_bytes = 0
-    file_out = open(filename_out.format(index=index_counter, fn=filename), "wb")
+    file_out = open(filename_out.format(index=index_counter, filename=filename), "wb")
     wrote_files = []
     try:
         with open(filename, "rb") as fin:
@@ -31,7 +32,7 @@ def split_files(filename: str, byte_len: Union[int, Iterable[int]], filename_out
                         file_out.close()
                         wrote_files.append(abspath(file_out.name))
                     index_counter += 1
-                    file_out = open(filename_out.format(index=index_counter, fn=filename), "wb")
+                    file_out = open(filename_out.format(index=index_counter, filename=filename), "wb")
 
                 file_out.write(read_byte)
 
@@ -59,6 +60,8 @@ def equal_byte_len(filename: str, count_splits: int = 100) -> Iterable[int]:
 
 if __name__ == "__main__":
 
+    __default_pattern = "{filename}.fsp.{index}"
+
     parser = ArgumentParser(
         description="Split or merge some files into some nice smaller byte files. Super useful. Output will be named like <orig_name>.fsp.<index>")
 
@@ -72,6 +75,8 @@ if __name__ == "__main__":
                         help="Count of files to split into. In split mode this or 'size' has to be set. If both are set 'size' will be used. In merge mode this is not used")
     parser.add_argument("--size", "-s", dest="size", nargs="*", default=None, type=int,
                         help="Sizes of files. If not enough sizes are given they are iterated again. In split mode this or 'count' has to be set. If both are set this will be used. In merge mode this is not used")
+    parser.add_argument("--pattern", "-p", dest="pattern", default=__default_pattern, nargs=1, required=False,
+                        help=f"Pattern of outputfiles. Don't use this if you don't know what you are doing. Use python formatted strings to specify format. Use {'{filename}'} to include original name. Use {'{index}'} to include the current index of created file. [Default: '{__default_pattern}']")
 
     args = parser.parse_args()
 
